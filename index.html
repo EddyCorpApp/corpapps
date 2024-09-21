@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Facturas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        form fieldset {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            background-color: #fdfdfd;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        form input, form select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        form table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        form table, form th, form td {
+            border: 1px solid #ddd;
+        }
+
+        form th, form td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #invoiceOutput {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #fff;
+            display: none;
+        }
+
+        .invoice-container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .invoice-container h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        .invoice-container p, .invoice-container table {
+            margin: 0;
+            padding: 0;
+        }
+
+        .invoice-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .invoice-container th, .invoice-container td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        .invoice-container th {
+            background-color: #f4f4f4;
+        }
+
+        .invoice-container p {
+            margin-top: 10px;
+        }
+
+        .invoice-container .summary {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .invoice-container .summary strong {
+            display: inline-block;
+            width: 150px;
+        }
+
+        .logo {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 100px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-file-invoice"></i> Generador de Facturas</h1>
+        <form id="invoiceForm">
+            <fieldset>
+                <legend>Datos del Negocio</legend>
+                <label for="businessName">Nombre del Negocio:</label>
+                <input type="text" id="businessName" required>
+                <label for="businessAddress">Dirección:</label>
+                <input type="text" id="businessAddress" required>
+                <label for="businessPhone">Teléfono:</label>
+                <input type="text" id="businessPhone" required>
+                <label for="createdBy">Creada por:</label>
+                <input type="text" id="createdBy" required>
+            </fieldset>
+            <fieldset>
+                <legend>Datos del Cliente</legend>
+                <label for="customerName">Nombre:</label>
+                <input type="text" id="customerName" required>
+                <label for="customerAddress">Dirección:</label>
+                <input type="text" id="customerAddress" required>
+            </fieldset>
+            <fieldset>
+                <legend>Datos de la Factura</legend>
+                <label for="currency">Moneda:</label>
+                <select id="currency">
+                    <option value="USD">USD</option>
+                    <option value="NIO">NIO</option>
+                </select>
+                <table id="invoiceTable">
+                    <thead>
+                        <tr>
+                            <th>Cantidad</th>
+                            <th>Descripción</th>
+                            <th>Precio</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <button type="button" id="addItem"><i class="fas fa-plus-circle"></i> Agregar Producto</button>
+            </fieldset>
+            <fieldset>
+                <legend>Resumen</legend>
+                <label for="subtotal">Subtotal:</label>
+                <input type="text" id="subtotal" readonly>
+                <label for="discount">Descuento:</label>
+                <input type="text" id="discount">
+                <label for="payment">Abono:</label>
+                <input type="text" id="payment">
+                <label for="total">Total:</label>
+                <input type="text" id="total" readonly>
+            </fieldset>
+            <button type="button" id="generateInvoice"><i class="fas fa-file-invoice-dollar"></i> Generar Factura</button>
+            <button type="button" id="shareWhatsapp"><i class="fab fa-whatsapp"></i> Compartir por WhatsApp</button>
+            <button type="button" id="saveImage"><i class="fas fa-save"></i> Guardar en Galería</button>
+        </form>
+        <div id="invoiceOutput"></div>
+    </div>
+    <script>
+        document.getElementById('addItem').addEventListener('click', addItem);
+        document.getElementById('generateInvoice').addEventListener('click', generateInvoice);
+        document.getElementById('shareWhatsapp').addEventListener('click', shareWhatsapp);
+        document.getElementById('saveImage').addEventListener('click', saveImage);
+
+        function addItem() {
+            const table = document.getElementById('invoiceTable').getElementsByTagName('tbody')[0];
+            const newRow = table.insertRow();
+            const qtyCell = newRow.insertCell(0);
+            const descCell = newRow.insertCell(1);
+            const priceCell = newRow.insertCell(2);
+            const totalCell = newRow.insertCell(3);
+            
+            qtyCell.innerHTML = '<input type="number" class="qty" min="1">';
+            descCell.innerHTML = '<input type="text" class="desc">';
+            priceCell.innerHTML = '<input type="number" class="price" min="0" step="0.01">';
+            totalCell.innerHTML = '<input type="text" class="total" readonly>';
+            
+            updateTotal();
+        }
+
+        function updateTotal() {
+            const rows = document.querySelectorAll('#invoiceTable tbody tr');
+            let subtotal = 0;
+            rows.forEach(row => {
+                const qty = row.querySelector('.qty').value || 0;
+                const price = row.querySelector('.price').value || 0;
+                const total = qty * price;
+                row.querySelector('.total').value = total.toFixed(2);
+                subtotal += total;
+            });
+            document.getElementById('subtotal').value = subtotal.toFixed(2);
+            updateGrandTotal();
+        }
+
+        function updateGrandTotal() {
+            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+            const discount = parseFloat(document.getElementById('discount').value) || 0;
+            const payment = parseFloat(document.getElementById('payment').value) || 0;
+            const total = subtotal - discount - payment;
+            document.getElementById('total').value = total.toFixed(2);
+        }
+
+        document.querySelectorAll('#invoiceTable').forEach(element => {
+            element.addEventListener('input', updateTotal);
+        });
+
+        document.getElementById('discount').addEventListener('input', updateGrandTotal);
+        document.getElementById('payment').addEventListener('input', updateGrandTotal);
+
+        function generateInvoice() {
+            const businessName = document.getElementById('businessName').value;
+            const businessAddress = document.getElementById('businessAddress').value;
+            const businessPhone = document.getElementById('businessPhone').value;
+            const createdBy = document.getElementById('createdBy').value;
+            const customerName = document.getElementById('customerName').value;
+            const customerAddress = document.getElementById('customerAddress').value;
+            const currency = document.getElementById('currency').value;
+            const items = document.querySelectorAll('#invoiceTable tbody tr');
+            
+            let invoiceHTML = `<div class="invoice-container">
+                <h2>Factura</h2>
+                <img src="https://i.pinimg.com/564x/c8/08/a5/c808a543ece0991a3955fe1dcad5ab97.jpg" class="logo" alt="Logo">
+                <p><i class="fas fa-store"></i> <strong>${businessName}</strong><br>
+                <i class="fas fa-map-marker-alt"></i> ${businessAddress}<br>
+                <i class="fas fa-phone"></i> Tel: ${businessPhone}<br>
+                <i class="fas fa-user"></i> Creada por: ${createdBy}</p>
+                <p><i class="fas fa-user"></i> <strong>Cliente:</strong><br>
+                ${customerName}<br>
+                ${customerAddress}</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cantidad</th>
+                            <th>Descripción</th>
+                            <th>Precio (${currency})</th>
+                            <th>Total (${currency})</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            items.forEach(item => {
+                const qty = item.querySelector('.qty').value;
+                const desc = item.querySelector('.desc').value;
+                const price = item.querySelector('.price').value;
+                const total = item.querySelector('.total').value;
+                invoiceHTML += `<tr>
+                    <td>${qty}</td>
+                    <td>${desc}</td>
+                    <td>${price}</td>
+                    <td>${total}</td>
+                </tr>`;
+            });
+            
+            invoiceHTML += `</tbody>
+                </table>
+                <div class="summary">
+                    <p><i class="fas fa-dollar-sign"></i> <strong>Subtotal:</strong> ${document.getElementById('subtotal').value} ${currency}<br>
+                    <i class="fas fa-tag"></i> <strong>Descuento:</strong> ${document.getElementById('discount').value} ${currency}<br>
+                    <i class="fas fa-credit-card"></i> <strong>Abono:</strong> ${document.getElementById('payment').value} ${currency}<br>
+                    <i class="fas fa-calculator"></i> <strong>Total:</strong> ${document.getElementById('total').value} ${currency}</p>
+                    <p><i class="fas fa-thumbs-up"></i> Gracias por su compra.</p>
+                </div>
+            </div>`;
+            
+            const invoiceOutput = document.getElementById('invoiceOutput');
+            invoiceOutput.innerHTML = invoiceHTML;
+            invoiceOutput.style.display = 'block';
+        }
+
+        function shareWhatsapp() {
+            const invoiceHTML = document.getElementById('invoiceOutput').innerHTML;
+            const whatsappMessage = encodeURIComponent(invoiceHTML.replace(/<[^>]*>?/gm, ' '));
+            const whatsappURL = `https://wa.me/?text=${whatsappMessage}`;
+            window.open(whatsappURL, '_blank');
+        }
+
+        function saveImage() {
+            const invoiceOutput = document.getElementById('invoiceOutput');
+            html2canvas(invoiceOutput, { useCORS: true }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'factura.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
