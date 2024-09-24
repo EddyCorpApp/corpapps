@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 900px;
+            margin: 0 auto;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #007bff;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .invoice {
+            padding: 20px;
+            margin-top: 20px;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            background-color: #ffffff;
+            text-align: center;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            color: #333;
+        }
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 2px solid #007bff;
+        }
+        .invoice-header img {
+            max-width: 60px;
+            height: auto;
+            margin-right: 10px;
+        }
+        .invoice h2 {
+            color: #007bff;
+            margin: 0;
+        }
+        .invoice-details {
+            text-align: left;
+            margin-top: 15px;
+        }
+        .invoice-details div {
+            margin-bottom: 8px;
+        }
+        .product-list {
+            padding: 0;
+            list-style: none;
+            margin-top: 20px;
+            text-align: left;
+        }
+        .product-list li {
+            padding: 10px;
+            background-color: #f8f9fa;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+        .totals {
+            margin-top: 20px;
+            text-align: right;
+            font-weight: bold;
+        }
+        .actions {
+            text-align: center;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .invoice, .invoice * {
+                visibility: visible;
+            }
+            .invoice {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                page-break-after: always;
+            }
+        }
+    </style>
+    <title>Generador de Facturas</title>
+</head>
+<body>
+
+<div class="container">
+    <h1><i class="fas fa-file-invoice icon"></i> Generador de Facturas</h1>
+    <div class="form-group">
+        <label>Número de Factura: <span id="invoiceNum"></span></label>
+        <label>Fecha: <span id="currentDate"></span></label>
+    </div>
+    <h3>Datos del Negocio</h3>
+    <div class="form-group">
+        <label for="businessName">Nombre del negocio:</label>
+        <input type="text" id="businessName">
+    </div>
+    <div class="form-group">
+        <label for="businessAddress">Dirección del negocio:</label>
+        <input type="text" id="businessAddress">
+    </div>
+    <div class="form-group">
+        <label for="businessPhone">Teléfono del negocio:</label>
+        <input type="text" id="businessPhone">
+    </div>
+    <div class="form-group">
+        <label for="logo">Agregar logo del negocio:</label>
+        <input type="file" id="logo" accept="image/*">
+    </div>
+
+    <h3>Datos del Cliente</h3>
+    <div class="form-group">
+        <label for="clientName">Nombre del cliente:</label>
+        <input type="text" id="clientName">
+    </div>
+    <div class="form-group">
+        <label for="clientAddress">Dirección del cliente:</label>
+        <input type="text" id="clientAddress">
+    </div>
+    <div class="form-group">
+        <label for="abono">Abono:</label>
+        <input type="number" id="abono" value="0">
+    </div>
+
+    <h3>Productos</h3>
+    <div class="form-group">
+        <label for="productDescription">Descripción:</label>
+        <input type="text" id="productDescription">
+    </div>
+    <div class="form-group">
+        <label for="quantity">Cantidad:</label>
+        <input type="number" id="quantity">
+    </div>
+    <div class="form-group">
+        <label for="price">Precio unitario:</label>
+        <input type="number" id="price">
+    </div>
+    <div class="actions">
+        <button onclick="addProduct()"><i class="fas fa-plus-circle icon"></i>Agregar Producto</button>
+    </div>
+    <ul class="product-list" id="productsContainer"></ul>
+    <div class="invoice" id="invoiceSection" style="display: none;">
+        <div class="invoice-header">
+            <img id="invoiceLogo" src="" alt="Logo del Negocio">
+            <h2>Factura</h2>
+            <div>
+                <span>Número de Factura: <span id="displayInvoiceNum"></span></span><br>
+                <span>Fecha: <span id="displayCurrentDate"></span></span>
+            </div>
+        </div>
+        <div class="invoice-details">
+            <h3>Datos del Negocio</h3>
+            <div><strong>Nombre:</strong> <span id="displayBusinessName"></span></div>
+            <div><strong>Dirección:</strong> <span id="displayBusinessAddress"></span></div>
+            <div><strong>Teléfono:</strong> <span id="displayBusinessPhone"></span></div>
+            <hr>
+            <h3>Datos del Cliente</h3>
+            <div><strong>Cliente:</strong> <span id="displayClientName"></span></div>
+            <div><strong>Dirección:</strong> <span id="displayClientAddress"></span></div>
+        </div>
+        <h3>Productos</h3>
+        <ul class="product-list" id="invoiceProducts"></ul>
+        <div class="totals">
+            <div>Total: <span id="totalAmount">0</span> C$</div>
+            <div>Abono: <span id="abonoAmount">0</span> C$</div>
+            <div>Restante: <span id="remainingAmount">0</span> C$</div>
+        </div>
+        <div class="client-message">Gracias por su compra. ¡Esperamos verle de nuevo!</div>
+    </div>
+    <div class="actions">
+        <button onclick="generateInvoice()"><i class="fas fa-file-alt icon"></i> Generar Factura</button>
+        <button onclick="downloadInvoiceAsImage()"><i class="fas fa-download icon"></i> Descargar</button>
+        <button onclick="shareInvoiceAsImage()"><i class="fab fa-whatsapp icon"></i> Compartir</button>
+        <button onclick="printInvoice()"><i class="fas fa-print icon"></i> Imprimir</button>
+    </div>
+</div>
+
+<script>
+    let products = [];
+    let invoiceCount = 1;
+
+    document.getElementById('logo').addEventListener('change', function() {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('invoiceLogo').src = e.target.result;
+        };
+        reader.readAsDataURL(this.files[0]);
+    });
+
+    function addProduct() {
+        const description = document.getElementById('productDescription').value;
+        const quantity = parseInt(document.getElementById('quantity').value);
+        const price = parseFloat(document.getElementById('price').value);
+        const total = quantity * price;
+
+        if (description && quantity > 0 && price > 0) {
+            products.push({ description, quantity, price, total });
+            displayProducts();
+            clearProductFields();
+        }
+    }
+
+    function displayProducts() {
+        const productContainer = document.getElementById('productsContainer');
+        productContainer.innerHTML = '';
+        products.forEach(product => {
+            const item = document.createElement('li');
+            item.textContent = `${product.quantity} x ${product.description} @ ${product.price} = ${product.total.toFixed(2)} C$`;
+            productContainer.appendChild(item);
+        });
+    }
+
+    function clearProductFields() {
+        document.getElementById('productDescription').value = '';
+        document.getElementById('quantity').value = '';
+        document.getElementById('price').value = '';
+    }
+
+    function generateInvoice() {
+        const currentDate = new Date().toLocaleDateString();
+        document.getElementById('currentDate').innerText = currentDate;
+        document.getElementById('displayCurrentDate').innerText = currentDate;
+        document.getElementById('invoiceNum').innerText = invoiceCount;
+        document.getElementById('displayInvoiceNum').innerText = invoiceCount;
+        invoiceCount++;
+
+        document.getElementById('displayBusinessName').innerText = document.getElementById('businessName').value;
+        document.getElementById('displayBusinessAddress').innerText = document.getElementById('businessAddress').value;
+        document.getElementById('displayBusinessPhone').innerText = document.getElementById('businessPhone').value;
+        document.getElementById('displayClientName').innerText = document.getElementById('clientName').value;
+        document.getElementById('displayClientAddress').innerText = document.getElementById('clientAddress').value;
+
+        const invoiceProductsContainer = document.getElementById('invoiceProducts');
+        invoiceProductsContainer.innerHTML = '';
+        products.forEach(product => {
+            const item = document.createElement('li');
+            item.textContent = `${product.quantity} x ${product.description} @ ${product.price} = ${product.total.toFixed(2)} C$`;
+            invoiceProductsContainer.appendChild(item);
+        });
+
+        const totalAmount = products.reduce((acc, product) => acc + product.total, 0);
+        const abono = parseFloat(document.getElementById('abono').value);
+        const restante = totalAmount - abono;
+
+        document.getElementById('totalAmount').innerText = totalAmount.toFixed(2);
+        document.getElementById('abonoAmount').innerText = abono.toFixed(2);
+        document.getElementById('remainingAmount').innerText = restante.toFixed(2);
+
+        document.getElementById('invoiceSection').style.display = 'block';
+    }
+
+    async function downloadInvoiceAsImage() {
+        const clientName = document.getElementById('clientName').value;
+        const invoiceSection = document.getElementById('invoiceSection');
+        const canvas = await html2canvas(invoiceSection);
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `Factura_${clientName}.png`;
+        link.click();
+    }
+
+    async function shareInvoiceAsImage() {
+        const invoiceSection = document.getElementById('invoiceSection');
+        html2canvas(invoiceSection).then(canvas => {
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], 'factura.png', { type: 'image/png' });
+                
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Factura Generada',
+                        text: 'Te comparto la factura generada.',
+                    });
+                } catch (error) {
+                    console.error('Error al compartir:', error);
+                    alert('La función de compartir no está soportada por este navegador o dispositivo.');
+                }
+            }, 'image/png');
+        });
+    }
+
+    function printInvoice() {
+        const invoiceSection = document.getElementById('invoiceSection');
+        invoiceSection.style.display = 'block';
+        window.print();
+        invoiceSection.style.display = 'none';
+    }
+</script>
+
+</body>
+</html>
